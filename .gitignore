@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Production builds
+build/
+dist/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Old folders (not needed for single HTML deployment)
+frontend/
+tourist-site/
+backend/
+blockchain/
+mobile/
+
+# Old documentation
+README-OLD.md
+DEPLOYMENT.md
+ENVIRONMENT_SETUP.md
+PROJECT_COMPLETION.md
+GITHUB_PAGES_DEPLOYMENT.md
+TESTING.md
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Keys and certificates
+*.pem
+*.key
+*.cert
+*.p12
+*.jks
+
+# ML Models
+ml-models/*.h5
+ml-models/*.pkl
+ml-models/training_data/

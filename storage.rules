@@ -1,0 +1,75 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAuthorized() {
+      return request.auth.token.role == 'police' || 
+             request.auth.token.role == 'tourism_dept' || 
+             request.auth.token.role == 'admin';
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidDocumentType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+    
+    // Profile pictures
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidImageType() && 
+                      isValidSize(5);
+    }
+    
+    // KYC documents (Aadhaar, Passport)
+    match /kyc/{userId}/{document} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAuthorized());
+      allow write: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidDocumentType() && 
+                      isValidSize(10);
+    }
+    
+    // Incident evidence (photos, videos)
+    match /incidents/{incidentId}/{evidence} {
+      allow read: if isAuthenticated() && isAuthorized();
+      allow write: if isAuthenticated() && isValidSize(50);
+    }
+    
+    // IoT device firmware
+    match /iot/firmware/{version} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAuthorized();
+    }
+    
+    // E-FIR documents
+    match /efir/{firId}/{document} {
+      allow read: if isAuthenticated() && isAuthorized();
+      allow write: if isAuthenticated() && isAuthorized();
+    }
+    
+    // Analytics exports
+    match /exports/{reportId}/{file} {
+      allow read: if isAuthenticated() && isAuthorized();
+      allow write: if isAuthenticated() && isAuthorized();
+    }
+  }
+}

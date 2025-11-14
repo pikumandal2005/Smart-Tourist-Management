@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.get('role', '') == 'admin';
+    }
+    
+    function isOperator() {
+      return isAuthenticated() && 
+             (request.auth.token.get('role', '') in ['operator', 'admin', 'police', 'tourism_dept']);
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection - Allow user creation during signup
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Digital IDs collection
+    match /digitalIds/{idDoc} {
+      allow read: if isAuthenticated();
+      allow create: if isOperator();
+      allow update: if isOperator();
+      allow delete: if isAdmin();
+    }
+    
+    // Tourists collection
+    match /tourists/{touristId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Allow self-registration
+      allow update: if isAdmin() || isOperator() || isOwner(touristId);
+      allow delete: if isAdmin();
+    }
+    
+    // Location tracking
+    match /locationHistory/{locationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isOperator();
+      allow delete: if isAdmin();
+    }
+    
+    // Alerts collection
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || isOperator();
+      allow delete: if isAdmin();
+    }
+    
+    // Incidents/E-FIR collection
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || isOperator();
+      allow delete: if isAdmin();
+    }
+    
+    // Geo-fencing zones
+    match /geofenceZones/{zoneId} {
+      allow read: if isAuthenticated();
+      allow write: if isOperator();
+    }
+    
+    // Safety scores
+    match /safetyScores/{scoreId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // IoT devices
+    match /iotDevices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow create: if isOperator();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // Emergency contacts
+    match /emergencyContacts/{contactId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Analytics and reports
+    match /analytics/{reportId} {
+      allow read: if isOperator();
+      allow write: if isOperator();
+    }
+    
+    // Safety zones collection (for dashboard compatibility)
+    match /safetyZones/{zoneId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Locations collection (general location data)
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+  }
+}
