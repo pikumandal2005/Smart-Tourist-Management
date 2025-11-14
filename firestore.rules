@@ -118,5 +118,21 @@ service cloud.firestore {
       allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }
+    
+    // Danger zones collection (for manual zone drawing)
+    match /dangerZones/{zoneId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Any authenticated user can create
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated(); // Any authenticated user can delete
+    }
+    
+    // Itinerary collection
+    match /itinerary/{itineraryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
   }
 }
