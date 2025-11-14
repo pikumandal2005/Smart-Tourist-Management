@@ -923,14 +923,24 @@
             // Load statistics
             loadStatistics();
             
+            // Load tourist list
+            loadTouristList();
+            
             // Load alerts
             loadAlerts('alertsList');
 
-            // Real-time updates
+            // Real-time updates for alerts
             db.collection('alerts').orderBy('timestamp', 'desc').limit(10)
                 .onSnapshot(snapshot => {
                     loadAlerts('alertsList');
                 });
+            
+            // Real-time updates for tourists
+            db.collection('tourists').onSnapshot(snapshot => {
+                loadTouristList();
+                loadTouristsOnMap();
+                loadStatistics();
+            });
         }
 
         // Initialize Tourist Dashboard
@@ -1138,25 +1148,91 @@
 
             try {
                 const snapshot = await db.collection('tourists').get();
+                
+                if (snapshot.empty) {
+                    console.log('No tourists found in database');
+                    return;
+                }
+                
                 snapshot.forEach(doc => {
                     const tourist = doc.data();
-                    if (tourist.lastLocation) {
-                        const marker = L.marker([
-                            tourist.lastLocation.latitude,
-                            tourist.lastLocation.longitude
-                        ]).addTo(map);
+                    if (tourist.location) {
+                        const lat = tourist.location.latitude || tourist.location._lat;
+                        const lng = tourist.location.longitude || tourist.location._long;
+                        
+                        const marker = L.marker([lat, lng]).addTo(map);
+                        
+                        const lastUpdate = tourist.lastUpdate ? 
+                            new Date(tourist.lastUpdate.toDate ? tourist.lastUpdate.toDate() : tourist.lastUpdate).toLocaleString() : 
+                            'Unknown';
                         
                         marker.bindPopup(`
-                            <strong>${tourist.name}</strong><br>
-                            ${tourist.country}<br>
-                            <small>Last updated: ${new Date(tourist.lastUpdated?.toDate()).toLocaleString()}</small>
+                            <strong>📍 Tourist</strong><br>
+                            Email: ${tourist.email || 'N/A'}<br>
+                            Status: ${tourist.status || 'Active'}<br>
+                            <small>Last updated: ${lastUpdate}</small>
                         `);
                         
                         markers.push(marker);
                     }
                 });
+                
+                console.log(`Loaded ${markers.length} tourists on map`);
             } catch (error) {
-                console.error('Error loading tourists:', error);
+                console.error('Error loading tourists on map:', error);
+            }
+        }
+        
+        // Load Tourist List
+        async function loadTouristList() {
+            const container = document.getElementById('touristsList');
+            if (!container) return;
+            
+            try {
+                const snapshot = await db.collection('tourists').get();
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No tourists found. Tourists will appear here when they login and enable location tracking.</p>';
+                    return;
+                }
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const tourist = doc.data();
+                    const lastUpdate = tourist.lastUpdate ? 
+                        new Date(tourist.lastUpdate.toDate ? tourist.lastUpdate.toDate() : tourist.lastUpdate).toLocaleString() : 
+                        'Never';
+                    
+                    let locationText = 'Location not available';
+                    if (tourist.location) {
+                        const lat = (tourist.location.latitude || tourist.location._lat || 0).toFixed(4);
+                        const lng = (tourist.location.longitude || tourist.location._long || 0).toFixed(4);
+                        locationText = `${lat}, ${lng}`;
+                    }
+                    
+                    const statusBadge = tourist.status === 'sos' ? 
+                        '<span class="badge danger">SOS</span>' : 
+                        '<span class="badge success">Active</span>';
+                    
+                    html += `
+                        <div class="list-item">
+                            <div>
+                                <strong>👤 ${tourist.email || 'Unknown Tourist'}</strong><br>
+                                <span style="color: #666; font-size: 14px;">
+                                    📍 ${locationText}<br>
+                                    🕐 ${lastUpdate}
+                                </span>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                console.log(`Loaded ${snapshot.size} tourists in list`);
+            } catch (error) {
+                console.error('Error loading tourist list:', error);
+                container.innerHTML = '<p style="color: #dc3545;">Error loading tourists. Check console for details.</p>';
             }
         }
 
